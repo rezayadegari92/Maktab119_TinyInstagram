@@ -17,6 +17,7 @@ class CustomUser(AbstractUser):
     #indexing for username search it 
     username = models.CharField(
         _("username"),
+        max_length=35,
         unique=True,
         db_index=True,
         help_text=_("Required. 150 characters or fewer. letters, digits and @/./+/-/_ only."),
@@ -29,13 +30,13 @@ class CustomUser(AbstractUser):
     last_name = models.CharField(_("last name"), max_length=20)
     birth_date = models.DateField(_("birth date"))
     phone_number = models.CharField(_("phone number"), max_length=15, blank=True, null=True)
-    
+    USERNAME_FIELD = "email"  # Use email as the unique identifier
     REQUIRED_FIELDS = ["username","first_name", "last_name", "birth_date"]  # Add required fields
 
     objects = CustomUserManager()
 
     def __str__(self):
-        return self.email
+        return self.username
 
     class Meta:
         verbose_name = _("user")
@@ -70,7 +71,6 @@ class Profile(TimestampMixin):
                                          )
     #limited image must be added for validation 
     
-    USERNAME_FIELD = "email"  # Use email as the unique identifier
     bio = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=100, blank=True, null=True)
     is_private = models.BooleanField(default=False)

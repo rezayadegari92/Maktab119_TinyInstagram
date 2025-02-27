@@ -8,9 +8,9 @@ from .models import CustomUser
 
 class CustomUserAdmin(UserAdmin):
     # Define the fields to be displayed in the admin list view
-    list_display = ("email", "first_name", "last_name", "birth_date", "phone_number", "is_staff")
+    list_display = ("username","email", "first_name", "last_name", "birth_date", "phone_number", "is_staff")
     list_filter = ("is_staff", "is_superuser", "is_active")
-    search_fields = ("email", "first_name", "last_name")
+    search_fields = ("username","email", "first_name", "last_name")
     ordering = ("email",)
 
     # Define the fieldsets for the add and change forms
@@ -50,7 +50,6 @@ from .models import Otp
 
 @admin.register(Otp)
 class OtpAdmin(admin.ModelAdmin):
-    list_display = ("user", "otp_code", "created_at", "expires_at", "is_expired")
+    list_display = ("email", "otp_code", "created_at", "expires_at", "is_expired")
     list_filter = ("created_at", "expires_at")
-    search_fields = ("user__email", "otp_code")
     readonly_fields = ("created_at", "expires_at")    
