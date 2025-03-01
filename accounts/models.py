@@ -85,14 +85,18 @@ class Profile(TimestampMixin):
 
 
 from django.utils import timezone
-
+from django.core.mail import send_mail
+import random
 
 
 class Otp(models.Model):
     email = models.EmailField(_("email_address"))
-    otp_code = models.CharField(max_length=6, null=False, blank=False)  # OTP codes are typically 4-6 digits
+    otp_code = models.CharField(max_length=6)  # OTP codes are typically 4-6 digits
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()  # Add an expiration time for the OTP
+
+    class Meta :
+        unique_together = ("user", "otp_code")
 
     def __str__(self):
         return f"OTP for {self.email}"
@@ -106,7 +110,20 @@ class Otp(models.Model):
         if not self.expires_at:
             self.expires_at = timezone.now() + timezone.timedelta(minutes=5)  # OTP expires in 5 minutes
         super().save(*args, **kwargs)
-
+    @staticmethod
+    def generate_otp():
+        return str(random.randint(100000, 999999))
+    @classmethod
+    def send_otp_email(cls,user):
+        cls.objects.filter(user=user).delete()
+        otp_code = cls.generate_otp()
+        expiers_at = timezone.now() + timezone.timedelta(minutes=5)
+        otp = cls.objects.create(user=user, )
+        subject = "Your OTP Code"
+        message = f"Your OTP code is: {otp_code}\nIt will expire in 5 minutes."
+        send_mail(subject, message, "your_email@gmail.com", [email])
+        return otp_code
+    
     class Meta:
         verbose_name = "OTP"
         verbose_name_plural = "OTPs"     
