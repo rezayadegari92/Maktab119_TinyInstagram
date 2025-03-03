@@ -93,37 +93,35 @@ class Otp(models.Model):
     email = models.EmailField(_("email_address"))
     otp_code = models.CharField(max_length=6)  # OTP codes are typically 4-6 digits
     created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField()  # Add an expiration time for the OTP
 
     class Meta :
         unique_together = ("user", "otp_code")
 
-    def __str__(self):
-        return f"OTP for {self.email}"
+    
 
-    def is_expired(self):
-        """Check if the OTP has expired."""
-        return timezone.now() > self.expires_at
 
     def save(self, *args, **kwargs):
         """Set the expiration time when saving the OTP."""
         if not self.expires_at:
             self.expires_at = timezone.now() + timezone.timedelta(minutes=5)  # OTP expires in 5 minutes
         super().save(*args, **kwargs)
+        
     @staticmethod
     def generate_otp():
         return str(random.randint(100000, 999999))
     @classmethod
-    def send_otp_email(cls,user):
-        cls.objects.filter(user=user).delete()
+    def send_otp_email(cls,email):
+        cls.objects.filter(email=email).delete()
         otp_code = cls.generate_otp()
-        expiers_at = timezone.now() + timezone.timedelta(minutes=5)
-        otp = cls.objects.create(user=user, )
-        subject = "Your OTP Code"
-        message = f"Your OTP code is: {otp_code}\nIt will expire in 5 minutes."
-        send_mail(subject, message, "your_email@gmail.com", [email])
+        otp = cls.objects.create(email=email, otp_code= otp_code )
+        send_mail(
+            subject="Your otp code ",
+            message=f"your otp code is : {otp_code} ",
+            from_email="yadegarireza50@gmail.com",
+            recipient_list=[email],
+            fail_silently=False,
+        )
         return otp_code
     
-    class Meta:
-        verbose_name = "OTP"
-        verbose_name_plural = "OTPs"     
+    def __str__(self):
+        return f"OTP for {self.email}"
