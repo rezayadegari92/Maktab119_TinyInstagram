@@ -96,19 +96,11 @@ class Otp(models.Model):
 
     class Meta :
         unique_together = ("user", "otp_code")
-
-    
-
-
-    def save(self, *args, **kwargs):
-        """Set the expiration time when saving the OTP."""
-        if not self.expires_at:
-            self.expires_at = timezone.now() + timezone.timedelta(minutes=5)  # OTP expires in 5 minutes
-        super().save(*args, **kwargs)
         
     @staticmethod
     def generate_otp():
         return str(random.randint(100000, 999999))
+    
     @classmethod
     def send_otp_email(cls,email):
         cls.objects.filter(email=email).delete()
