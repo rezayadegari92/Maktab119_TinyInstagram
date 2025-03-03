@@ -7,10 +7,6 @@ class ImageAdmin(admin.ModelAdmin):
     list_filter = ('image_type', 'created_at')
     search_fields = ('user__username',)
 
-@admin.register(Like)
-class LikeAdmin(admin.ModelAdmin):
-    list_display = ('user', 'post', 'like_status', 'created_at')
-    search_fields = ('user__username', 'post__id')
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):

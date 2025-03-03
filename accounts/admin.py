@@ -50,6 +50,6 @@ from .models import Otp
 
 @admin.register(Otp)
 class OtpAdmin(admin.ModelAdmin):
-    list_display = ("email", "otp_code", "created_at", "expires_at", "is_expired")
-    list_filter = ("created_at", "expires_at")
-    readonly_fields = ("created_at", "expires_at")    
+    list_display = ("email", "otp_code", "created_at",)
+    list_filter = ("created_at",)
+    readonly_fields = ("created_at",)    

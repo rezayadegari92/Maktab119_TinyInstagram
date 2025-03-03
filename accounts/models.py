@@ -90,12 +90,13 @@ import random
 
 
 class Otp(models.Model):
-    email = models.EmailField(_("email_address"))
+
+    email = models.EmailField(_("email_address"),unique=True)
     otp_code = models.CharField(max_length=6)  # OTP codes are typically 4-6 digits
     created_at = models.DateTimeField(auto_now_add=True)
-
+    expires_at = models.DateTimeField()
     class Meta :
-        unique_together = ("user", "otp_code")
+        unique_together = ("email", "otp_code")
         
     @staticmethod
     def generate_otp():
@@ -105,7 +106,7 @@ class Otp(models.Model):
     def send_otp_email(cls,email):
         cls.objects.filter(email=email).delete()
         otp_code = cls.generate_otp()
-        otp = cls.objects.create(email=email, otp_code= otp_code )
+        otp = cls.objects.create(email=email, otp_code= otp_code, expires_at=timezone.now() + timezone.timedelta(minutes=5) )
         send_mail(
             subject="Your otp code ",
             message=f"your otp code is : {otp_code} ",

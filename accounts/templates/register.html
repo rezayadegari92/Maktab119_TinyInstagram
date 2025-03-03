@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup with OTP</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+    <!-- فرم درخواست OTP -->
+    <h2>Request OTP</h2>
+    <input type="email" id="email" placeholder="Enter your email">
+    <button id="requestOtpBtn">Send OTP</button>
+    <p id="otpMessage"></p>
+
+    <!-- فرم ثبت‌نام -->
+    <h2>Register</h2>
+    <input type="text" id="first_name" placeholder="First Name">
+    <input type="text" id="last_name" placeholder="Last Name">
+    <input type="date" id="birth_date">
+    <input type="password" id="password" placeholder="Password">
+    <input type="text" id="otp_code" placeholder="Enter OTP">
+    <button id="registerBtn">Register</button>
+    <p id="registerMessage"></p>
+
+    <script>
+        $(document).ready(function () {
+            // درخواست OTP
+            $("#requestOtpBtn").click(function () {
+                var email = $("#email").val();
+
+                $.ajax({
+                    url: "/api/verify-otp/",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ "email": email }),
+                    success: function (response) {
+                        $("#otpMessage").text("OTP sent to " + email);
+                    },
+                    error: function (xhr) {
+                        $("#otpMessage").text("Error: " + xhr.responseText);
+                    }
+                });
+            });
+
+            // ثبت‌نام کاربر با OTP
+            $("#registerBtn").click(function () {
+                var data = {
+                    email: $("#email").val(),
+                    password: $("#password").val(),
+                    first_name: $("#first_name").val(),
+                    last_name: $("#last_name").val(),
+                    birth_date: $("#birth_date").val(),
+                    otp_code: $("#otp_code").val()
+                };
+
+                $.ajax({
+                    url: "/api/register/",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    success: function (response) {
+                        $("#registerMessage").text("Registration successful!");
+                    },
+                    error: function (xhr) {
+                        $("#registerMessage").text("Error: " + xhr.responseText);
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
