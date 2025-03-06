@@ -8,13 +8,13 @@
 </head>
 <body>
 
-    <!-- فرم درخواست OTP -->
+    
     <h2>Request OTP</h2>
     <input type="email" id="email" placeholder="Enter your email">
     <button id="requestOtpBtn">Send OTP</button>
     <p id="otpMessage"></p>
 
-    <!-- فرم ثبت‌نام -->
+    
     <h2>Register</h2>
     <input type="text" id="first_name" placeholder="First Name">
     <input type="text" id="last_name" placeholder="Last Name">
@@ -26,7 +26,7 @@
 
     <script>
         $(document).ready(function () {
-            // درخواست OTP
+            
             $("#requestOtpBtn").click(function () {
                 var email = $("#email").val();
 
@@ -44,7 +44,7 @@
                 });
             });
 
-            // ثبت‌نام کاربر با OTP
+           
             $("#registerBtn").click(function () {
                 var data = {
                     email: $("#email").val(),

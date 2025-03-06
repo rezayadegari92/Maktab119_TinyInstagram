@@ -61,18 +61,19 @@ class TimestampMixin(models.Model):
 
 class Profile(TimestampMixin):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=False, blank=False, related_name="profile")
-    website = models.CharField(max_length=255, blank=True, null=True)
+    website = models.CharField(max_length=255, blank=True, null=True, default=None)
     #limited image must be added for validation 
     profile_picture = models.ImageField(_("profile picture"),
                                          upload_to='profile_pictures/', 
                                          blank=True, 
                                          null=True,
-                                         validators=[validate_file_size]
+                                         validators=[validate_file_size],
+                                         default=None
                                          )
     #limited image must be added for validation 
     
-    bio = models.TextField(blank=True, null=True)
-    location = models.CharField(max_length=100, blank=True, null=True)
+    bio = models.TextField(blank=True, null=True, default=None)
+    location = models.CharField(max_length=100, blank=True, null=True, default=None)
     is_private = models.BooleanField(default=False)
 
     def __str__(self):
@@ -94,7 +95,6 @@ class Otp(models.Model):
     email = models.EmailField(_("email_address"),unique=True)
     otp_code = models.CharField(max_length=6)  # OTP codes are typically 4-6 digits
     created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField()
     class Meta :
         unique_together = ("email", "otp_code")
         
@@ -106,7 +106,7 @@ class Otp(models.Model):
     def send_otp_email(cls,email):
         cls.objects.filter(email=email).delete()
         otp_code = cls.generate_otp()
-        otp = cls.objects.create(email=email, otp_code= otp_code, expires_at=timezone.now() + timezone.timedelta(minutes=5) )
+        otp = cls.objects.create(email=email, otp_code= otp_code )
         send_mail(
             subject="Your otp code ",
             message=f"your otp code is : {otp_code} ",
@@ -115,6 +115,5 @@ class Otp(models.Model):
             fail_silently=False,
         )
         return otp_code
-    
     def __str__(self):
         return f"OTP for {self.email}"
