@@ -40,7 +40,7 @@ class Comment(TimestampMixin):
     user = models.ForeignKey(CustomUser,on_delete=models.CASCADE,related_name='comments')
     text = models.TextField()
     post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='comments')
-    likes = GenericRelation(Like)
+    likes = GenericRelation(Like, related_query_name="comments")
     def __str__(self):
         return f"comment by {self.user.username} on post {self.post.id}"
 
@@ -64,7 +64,7 @@ class Follow(models.Model):
 class Post(TimestampMixin):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='posts')
     Image = models.ForeignKey(Image,on_delete=models.CASCADE, null=True, blank=True, related_name='posts')
-    likes = GenericRelation(Like)
+    likes = GenericRelation(Like, related_query_name="posts")
     caption = models.TextField(blank=True, null=True)
     is_archive = models.BooleanField(default=False)
     tags = models.ManyToManyField('Tag', blank=True, related_name='posts') 

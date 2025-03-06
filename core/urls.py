@@ -21,5 +21,6 @@ from rest_framework.routers import DefaultRouter
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('accounts.api.v1.urls')),
-    path('',include('accounts.urls'))
+    path('',include('accounts.urls')),
+    path('socials/', include('socials.api.v1.urls'))
 ]
