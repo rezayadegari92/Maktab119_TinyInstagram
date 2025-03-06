@@ -1,3 +1,4 @@
+from wsgiref import validate
 from rest_framework import serializers
 from accounts.models import CustomUser, Otp, Profile
 from django.contrib.auth.password_validation import validate_password
@@ -22,6 +23,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = CustomUser.objects.create_user(
             email=validated_data['email'],
+            username=validated_data["username"],
             password=validated_data['password'],
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
@@ -35,7 +37,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
     
 
-# class UserDetailSerializer(serializers.Serializer):
+# class UserDetailSerializer(serializers.ModelSerializer):
 #     password = serializers.CharField(write_only=True, requierd = True, style = {'input_type':'password'})
 
 #     class Meta :

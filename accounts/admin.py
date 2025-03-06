@@ -16,7 +16,7 @@ class CustomUserAdmin(UserAdmin):
     # Define the fieldsets for the add and change forms
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        (_("Personal Info"), {"fields": ("first_name", "last_name", "birth_date", "phone_number", "profile_picture")}),
+        (_("Personal Info"), {"fields": ("first_name", "last_name", "birth_date", "phone_number")}),
         (_("Permissions"), {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         (_("Important dates"), {"fields": ("last_login", "date_joined")}),
     )
