@@ -31,3 +31,7 @@ class PostAdmin(admin.ModelAdmin):
     list_filter = ('is_archive', 'created_at')
     search_fields = ('user__username', 'caption', 'location')
     filter_horizontal = ('tags',)
+
+
+
+admin.site.register(Like)    

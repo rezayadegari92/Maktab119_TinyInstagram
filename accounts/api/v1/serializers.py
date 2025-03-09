@@ -1,3 +1,4 @@
+
 from wsgiref import validate
 from rest_framework import serializers
 from accounts.models import CustomUser, Otp, Profile
@@ -45,3 +46,16 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 #         fields = ['id','email', 'username','password', 'first_name', 'last_name', 'birth_date', 'phone_number', 'otp_code']
 
 
+class ProfileSerializer(serializers.ModelSerializer):
+    username = user = serializers.SlugRelatedField(
+        slug_field="username", 
+        queryset=CustomUser.objects.all()
+    )
+    post_images = serializers.SerializerMethodField()
+    class Meta:
+        model = Profile
+        fields = ['id','username','website','bio','profile_picture', 'location','is_private','post_images']
+
+    def get_post_images(self, obj):
+        posts = obj.user.posts.all().order_by("-created_at")
+        return [post.image.url for post in posts if post.image ]    

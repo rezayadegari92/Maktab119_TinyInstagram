@@ -31,7 +31,10 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ['id', 'user', 'text', 'like_count', 'created_at']
     
-
+class ImageSerializer(serializers.ModelSerializer):
+    class Meta :
+        model = Image
+        fields = ['id', 'image', 'created_at']
 
 class PostSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(
@@ -42,6 +45,7 @@ class PostSerializer(serializers.ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     likes = LikeSerializer(source="likes.all", many=True, read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
+    image = ImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Post
