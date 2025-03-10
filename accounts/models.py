@@ -77,7 +77,7 @@ class Profile(TimestampMixin):
     is_private = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Profile of {self.user.email}"
+        return f"Profile of {self.user.username}"
 
     class Meta:
         verbose_name = "Profile"

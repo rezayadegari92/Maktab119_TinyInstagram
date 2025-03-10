@@ -134,3 +134,8 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "yadegarireza50@gmail.com"  
 EMAIL_HOST_PASSWORD = "neks hzfr ymul thln"  
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+import os 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

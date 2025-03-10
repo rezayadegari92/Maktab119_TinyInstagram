@@ -4,6 +4,7 @@ from accounts.models import TimestampMixin, CustomUser
 
 class Image(TimestampMixin):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="images")
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='posts/')
     IMAGE_TYPE_CHOICES = (
         ('post','Post'),
@@ -14,6 +15,11 @@ class Image(TimestampMixin):
 
     def __str__(self):
         return f"image is for {self.user.username}"
+    
+    def save(self, *args, **kwargs):
+        self.user = self.post.user
+        super().save(*args, **kwargs)
+
 
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -63,7 +69,6 @@ class Follow(models.Model):
 
 class Post(TimestampMixin):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='posts')
-    Image = models.ForeignKey(Image,on_delete=models.CASCADE, null=True, blank=True, related_name='posts')
     likes = GenericRelation(Like, related_query_name="posts")
     caption = models.TextField(blank=True, null=True)
     is_archive = models.BooleanField(default=False)

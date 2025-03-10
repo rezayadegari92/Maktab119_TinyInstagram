@@ -34,7 +34,7 @@ class CommentSerializer(serializers.ModelSerializer):
 class ImageSerializer(serializers.ModelSerializer):
     class Meta :
         model = Image
-        fields = ['id', 'image', 'created_at']
+        fields = ['id', 'image', 'image_type','created_at']
 
 class PostSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(
@@ -45,11 +45,11 @@ class PostSerializer(serializers.ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     likes = LikeSerializer(source="likes.all", many=True, read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
-    image = ImageSerializer(many=True, read_only=True)
+    images = ImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Post
-        fields = ['id', 'user', 'image', 'caption', 'is_liked','comments', 'likes', 'like_count', 'created_at']
+        fields = ['id', 'user', 'images', 'caption', 'is_liked','comments', 'likes', 'like_count', 'created_at']
 
     def get_is_liked(self, obj):
         user = self.context["request"].user

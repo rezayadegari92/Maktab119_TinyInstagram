@@ -47,15 +47,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    username = user = serializers.SlugRelatedField(
+    user = user = serializers.SlugRelatedField(
         slug_field="username", 
         queryset=CustomUser.objects.all()
     )
-    post_images = serializers.SerializerMethodField()
+    posts_images = serializers.SerializerMethodField()
     class Meta:
         model = Profile
-        fields = ['id','username','website','bio','profile_picture', 'location','is_private','post_images']
+        fields = ['id','user','website','bio','profile_picture', 'location','is_private','posts_images']
 
-    def get_post_images(self, obj):
+    def get_posts_images(self, obj):
         posts = obj.user.posts.all().order_by("-created_at")
-        return [post.image.url for post in posts if post.image ]    
+        return [post.images.first().image.url if post.images.exists() else None for post in posts]   

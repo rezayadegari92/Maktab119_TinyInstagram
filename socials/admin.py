@@ -1,11 +1,6 @@
 from django.contrib import admin
 from .models import Image, Like, Tag, Comment, Follow, Post
 
-@admin.register(Image)
-class ImageAdmin(admin.ModelAdmin):
-    list_display = ('user', 'image', 'image_type', 'created_at')
-    list_filter = ('image_type', 'created_at')
-    search_fields = ('user__username',)
 
 
 @admin.register(Tag)
@@ -25,12 +20,25 @@ class FollowAdmin(admin.ModelAdmin):
     list_filter = ('created_at',)
     search_fields = ('owner__username', 'followed_users__username')
 
-@admin.register(Post)
+from django.utils.html import format_html
+
+
+
+
+
+class ImageInline(admin.TabularInline):
+    model = Image
+    extra = 1  # تعداد فرم‌های خالی برای افزودن تصویر جدید
+
+    # اگر می‌خواهید فیلد user به صورت خودکار مقداردهی شود:
+    readonly_fields = ('user',)
+
+
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('user', 'Image', 'caption', 'is_archive', 'location', 'created_at')
-    list_filter = ('is_archive', 'created_at')
-    search_fields = ('user__username', 'caption', 'location')
-    filter_horizontal = ('tags',)
+    inlines = [ImageInline]
+    list_display = ('user', 'caption', 'created_at')
+
+admin.site.register(Post, PostAdmin)
 
 
 
