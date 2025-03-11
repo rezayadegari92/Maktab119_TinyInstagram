@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posts</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+        }
+        .container {
+            width: 80%;
+            margin: 20px auto;
+        }
+        .post-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .post-card h2 {
+            font-size: 18px;
+            margin: 0;
+        }
+        .post-card p {
+            font-size: 14px;
+            color: #555;
+        }
+        .likes {
+            color: #ff5959;
+            cursor: pointer;
+            font-size: 16px;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .comment-form input {
+            padding: 10px;
+            width: 70%;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .comment-form button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #ff5959;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .comment-form button:hover {
+            background-color: #ff2a2a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="post-list"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let page = 1;
+            let isLoading = false;
+
+            function loadPosts() {
+                if (isLoading) return;
+                isLoading = true;
+                fetch('/socials/posts/' + page)
+                    .then(response => response.json())
+                    .then(data => {
+                        const postList = document.getElementById('post-list');
+                        data.results.forEach(post => {
+                            const postCard = document.createElement('div');
+                            postCard.classList.add('post-card');
+                            postCard.dataset.id = post.id;
+
+                            postCard.innerHTML = `
+                                <h2>${post.user}</h2>
+                                <p>${post.caption}</p>
+                                <div class="likes ${post.is_liked ? 'liked' : ''}" data-id="${post.id}">
+                                    ❤️ <span>${post.like_count}</span>
+                                </div>
+                                <form class="comment-form">
+                                    <input type="text" class="comment-input" placeholder="Add a comment...">
+                                    <button type="submit">Post</button>
+                                </form>
+                                <div class="comments">
+                                    ${post.comments.map(comment => `<p><strong>${comment.user}</strong>: ${comment.text}</p>`).join('')}
+                                </div>
+                            `;
+                            postList.appendChild(postCard);
+                        });
+                        page++;
+                        isLoading = false;
+                    })
+                    .catch(error => {
+                        console.error('Error loading posts:', error);
+                        isLoading = false;
+                    });
+            }
+
+            loadPosts();
+
+            document.getElementById('post-list').addEventListener('click', function (event) {
+                if (event.target && event.target.matches('.likes')) {
+                    const postId = event.target.dataset.id;
+                    fetch(`/socials/posts/${postId}/like/`, { method: 'POST' })
+                        .then(response => response.json())
+                        .then(data => {
+                            event.target.classList.toggle('liked');
+                            event.target.querySelector('span').textContent = data.likes;
+                        });
+                }
+            });
+
+            document.getElementById('post-list').addEventListener('submit', function (event) {
+                if (event.target && event.target.matches('.comment-form')) {
+                    event.preventDefault();
+                    const form = event.target;
+                    const commentInput = form.querySelector('.comment-input');
+                    const postId = form.closest('.post-card').dataset.id;
+
+                    fetch(`/socials/posts/${postId}/comment/`, {
+                        method: 'POST',
+                        body: JSON.stringify({ text: commentInput.value }),
+                        headers: { 'Content-Type': 'application/json' }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const commentSection = form.closest('.post-card').querySelector('.comments');
+                        const newComment = document.createElement('p');
+                        newComment.innerHTML = `<strong>${data.user}</strong>: ${data.text}`;
+                        commentSection.appendChild(newComment);
+                        commentInput.value = '';
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
