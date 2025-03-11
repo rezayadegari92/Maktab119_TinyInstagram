@@ -127,3 +127,27 @@ class UpdateProfileView(APIView):
             serializer.save()
             return Response({"message": "Profile updated successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+from django.contrib.auth import authenticate, login
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+@csrf_exempt
+def api_login(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            email = data.get("email")
+            password = data.get("password")
+
+            user = authenticate(request, email=email, password=password)
+            if user is not None:
+                login(request, user)
+                return JsonResponse({"message": " login successful"}, status=200)
+            else:
+                return JsonResponse({"error": "username or password is not correct"}, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({"error": " bad request"}, status=400)
+    return JsonResponse({"error": "bad request "}, status=405)
