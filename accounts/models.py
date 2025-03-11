@@ -88,7 +88,7 @@ class Profile(TimestampMixin):
 from django.utils import timezone
 from django.core.mail import send_mail
 import random
-
+from datetime import timedelta
 
 class Otp(models.Model):
 
@@ -117,3 +117,6 @@ class Otp(models.Model):
         return otp_code
     def __str__(self):
         return f"OTP for {self.email}"
+    
+    def is_expired(self):
+        return timezone.now() > self.created_at + timedelta(minutes=5)
