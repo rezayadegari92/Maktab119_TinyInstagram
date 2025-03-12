@@ -1,150 +1,200 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram-like Social App</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>تعامل با شبکه‌های اجتماعی</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body {
+            font-family: Arial, sans-serif;
             background-color: #fafafa;
+            margin: 0;
+            padding: 0;
         }
-        .post-card {
-            background: #fff;
-            border: 1px solid #e1e1e1;
-            border-radius: 8px;
+        .post {
+            background-color: #fff;
+            border: 1px solid #dbdbdb;
             margin: 20px auto;
             max-width: 600px;
+            padding: 15px;
+            border-radius: 8px;
         }
-        .post-card img {
-            width: 100%;
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
-        }
-        .post-actions button {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-        }
-        .post-actions button.liked {
-            color: #ed4956;
-        }
-        .post-comments {
-            padding: 10px;
-        }
-        .comment {
-            margin-bottom: 10px;
-        }
-        .comment .username {
+        .post h3 {
+            margin: 0;
+            font-size: 14px;
             font-weight: bold;
-            margin-right: 5px;
         }
-        .add-comment input {
+        .post p {
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .post .images img {
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .post button {
+            background-color: #0095f6;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .post button:hover {
+            background-color: #0077c2;
+        }
+        .post .comments {
+            margin-top: 15px;
+        }
+        .post .comments .comment {
+            border-top: 1px solid #dbdbdb;
+            padding: 10px 0;
+        }
+        .post .comments textarea {
             width: 100%;
             padding: 8px;
-            border: 1px solid #e1e1e1;
+            border: 1px solid #dbdbdb;
             border-radius: 4px;
+            margin-top: 10px;
+        }
+        #create-post-form {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #dbdbdb;
+            border-radius: 8px;
+        }
+        #create-post-form textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dbdbdb;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        #create-post-form input[type="file"] {
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Post List -->
-        <div id="post-list">
-            <!-- Posts will be dynamically loaded here -->
-        </div>
-    </div>
+    <h1>پست‌ها</h1>
+    <div id="posts-list"></div>
 
-    <!-- Bootstrap JS and dependencies -->
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <h2>ایجاد پست جدید</h2>
+    <form id="create-post-form">
+        <textarea id="caption" placeholder="متن پست"></textarea><br>
+        <input type="file" id="images" multiple><br>
+        <button type="submit">ارسال پست</button>
+    </form>
+
     <script>
-        $(document).ready(function () {
-            const apiBaseUrl = 'socials/';
-
-            // Load all posts
-            function loadPosts() {
+        $(document).ready(function() {
+            // تابع برای دریافت و نمایش پست‌ها
+            function fetchPosts() {
                 $.ajax({
-                    url: apiBaseUrl + 'posts/',
+                    url: '/api/posts/',  // آدرس API لیست پست‌ها
                     method: 'GET',
-                    success: function (response) {
-                        $('#post-list').empty();
-                        response.forEach(post => {
-                            const postHtml = `
-                                <div class="post-card" data-post-id="${post.id}">
-                                    <img src="${post.images[0]?.url || 'https://via.placeholder.com/600x400'}" alt="Post Image">
-                                    <div class="p-3">
-                                        <div class="post-actions">
-                                            <button class="like-button ${post.is_liked ? 'liked' : ''}" onclick="toggleLike(${post.id})">
-                                                ❤️
-                                            </button>
-                                            <span class="like-count">${post.like_count} Likes</span>
-                                        </div>
-                                        <div class="post-caption">
-                                            <strong>${post.user.username}</strong> ${post.caption}
-                                        </div>
-                                        <div class="post-comments">
-                                            ${post.comments.map(comment => `
-                                                <div class="comment">
-                                                    <span class="username">${comment.user.username}</span>
-                                                    <span class="text">${comment.text}</span>
-                                                </div>
-                                            `).join('')}
-                                        </div>
-                                        <div class="add-comment">
-                                            <input type="text" placeholder="Add a comment..." onkeypress="if(event.keyCode === 13) addComment(${post.id}, this)">
-                                        </div>
+                    success: function(response) {
+                        $('#posts-list').empty();
+                        response.forEach(function(post) {
+                            let postHtml = `
+                                <div class="post">
+                                    <h3>${post.user}</h3>
+                                    <p>${post.caption}</p>
+                                    <div class="images">
+                                        ${post.images.map(image => `<img src="${image.image}" alt="تصویر پست">`).join('')}
                                     </div>
+                                    <p>لایک‌ها: ${post.like_count}</p>
+                                    <button onclick="likePost(${post.id})">لایک</button>
+                                    <div class="comments">
+                                        <h4>کامنت‌ها:</h4>
+                                        ${post.comments.map(comment => `
+                                            <div class="comment">
+                                                <p>${comment.user}: ${comment.text}</p>
+                                                <p>لایک‌ها: ${comment.like_count}</p>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    <form onsubmit="addComment(event, ${post.id})">
+                                        <textarea placeholder="کامنت خود را بنویسید"></textarea>
+                                        <button type="submit">ارسال کامنت</button>
+                                    </form>
                                 </div>
                             `;
-                            $('#post-list').append(postHtml);
+                            $('#posts-list').append(postHtml);
                         });
                     },
-                    error: function (xhr, status, error) {
-                        console.error("Error loading posts:", error);
+                    error: function(xhr, status, error) {
+                        console.error('خطا در دریافت پست‌ها:', error);
                     }
                 });
             }
 
-            // Toggle like on a post
-            window.toggleLike = function (postId) {
+            // تابع برای ایجاد پست جدید
+            $('#create-post-form').submit(function(event) {
+                event.preventDefault();
+                let formData = new FormData();
+                formData.append('caption', $('#caption').val());
+                $('#images')[0].files.forEach(file => {
+                    formData.append('images', file);
+                });
+
                 $.ajax({
-                    url: apiBaseUrl + `posts/${postId}/like/`,
+                    url: '/api/posts/create/',  // آدرس API ایجاد پست
                     method: 'POST',
-                    headers: { "X-CSRFToken": "{{ csrf_token }}" },
-                    success: function (response) {
-                        loadPosts(); // Reload posts to update like status
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        alert('پست با موفقیت ایجاد شد!');
+                        fetchPosts();  // بروزرسانی لیست پست‌ها
                     },
-                    error: function (xhr, status, error) {
-                        console.error("Error toggling like:", error);
+                    error: function(xhr, status, error) {
+                        console.error('خطا در ایجاد پست:', error);
+                    }
+                });
+            });
+
+            // تابع برای لایک کردن پست
+            window.likePost = function(postId) {
+                $.ajax({
+                    url: `/api/posts/${postId}/like/`,  // آدرس API لایک پست
+                    method: 'POST',
+                    success: function(response) {
+                        alert(response.detail);
+                        fetchPosts();  // بروزرسانی لیست پست‌ها
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('خطا در لایک کردن پست:', error);
                     }
                 });
             };
 
-            // Add a comment to a post
-            window.addComment = function (postId, input) {
-                const commentText = input.value.trim();
-                if (commentText) {
-                    $.ajax({
-                        url: apiBaseUrl + `posts/${postId}/comment/`,
-                        method: 'POST',
-                        headers: { "X-CSRFToken": "{{ csrf_token }}" },
-                        data: { text: commentText },
-                        success: function (response) {
-                            loadPosts(); // Reload posts to show the new comment
-                            input.value = ''; // Clear the input field
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error adding comment:", error);
-                        }
-                    });
-                }
+            // تابع برای افزودن کامنت
+            window.addComment = function(event, postId) {
+                event.preventDefault();
+                let commentText = $(event.target).find('textarea').val();
+
+                $.ajax({
+                    url: `/api/posts/${postId}/comment/`,  // آدرس API افزودن کامنت
+                    method: 'POST',
+                    data: { text: commentText },
+                    success: function(response) {
+                        alert('کامنت با موفقیت افزوده شد!');
+                        fetchPosts();  // بروزرسانی لیست پست‌ها
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('خطا در افزودن کامنت:', error);
+                    }
+                });
             };
 
-            // Initial load of posts
-            loadPosts();
+            // دریافت اولیه پست‌ها
+            fetchPosts();
         });
     </script>
 </body>

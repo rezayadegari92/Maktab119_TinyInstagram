@@ -1,3 +1,4 @@
+from email.mime import image
 from rest_framework import viewsets, permissions
 from socials.models import Post
 from socials.api.v1.serializers import PostSerializer
@@ -43,34 +44,70 @@ from rest_framework.permissions import IsAuthenticated
 #         return Response(CommentSerializer(comment).data)
 
 
-class PostListCreateView(generics.ListCreateAPIView):
-    queryset = Post.objects.all()
+class PostListView(generics.ListAPIView):
     serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-class PostDetailView(generics.RetrieveAPIView):
     queryset = Post.objects.all()
-    serializer_class = PostSerializer
 
-class LikePostView(generics.CreateAPIView):
-    serializer_class = LikeSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        queryset = super().get_queryset()
 
-    def perform_create(self, serializer):
-        post = get_object_or_404(Post, id=self.kwargs['post_id'])
-        like, created = Like.objects.get_or_create(user=self.request.user, post=post)
-        if not created:
-            like.delete()  # Unlike if already liked
-            return Response({"detail": "Post unliked."}, status=status.HTTP_204_NO_CONTENT)
-        serializer.save(user=self.request.user, post=post)
+        # فیلتر کردن بر اساس تگ یا لوکیشن در صورت نیاز
+        tags = self.request.query_params.get('tags', None)
+        location = self.request.query_params.get('location', None)
 
-class CommentCreateView(generics.CreateAPIView):
-    serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+        if tags:
+            queryset = queryset.filter(tags__tag_name=tags)
+        if location:
+            queryset = queryset.filter(location__icontains=location)
 
-    def perform_create(self, serializer):
-        post = get_object_or_404(Post, id=self.kwargs['post_id'])
-        serializer.save(user=self.request.user, post=post)
+        return queryset
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from socials.models import Post, Image
+from .serializers import PostSerializer
+
+
+class PostCreateView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = PostSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            # پست جدید ذخیره می‌شود
+            post = serializer.save(user=request.user)
+
+            # اگر عکس‌ها ارسال شده‌اند، ذخیره می‌شوند
+            images = request.data.get('images', [])
+            for image_data in images:
+                image = Image.objects.create(post=post, **image_data)
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+    
+
+
+class CommentCreateView(APIView):
+    def post(self, request, post_id) :
+        post = Post.objects.get(id=post_id)
+        serializer = CommentSerializer(data=request.data) 
+
+        if serializer.is_valid():
+            serializer.save(user=request.user, post=post)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      
+
+class LikePostView(APIView):
+    def post(self, request, post_id) :
+        post = Post.objects.get(id=post_id)
+        if Like.objects.filter(user=request.user, post=post).exists():
+            return Response({"detail":"you already like this :)"})
+        like = Like.objects.create(user=request.user, post=post)  
+        return Response({"detail":"post liked :)"}, status=status.HTTP_201_CREATED)
