@@ -9,7 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from socials.models import Post, Like, Comment
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 # class PostViewSet(viewsets.ModelViewSet):
 #     queryset = Post.objects.all()
@@ -45,13 +45,12 @@ from rest_framework.permissions import IsAuthenticated
 
 
 class PostListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
     serializer_class = PostSerializer
     queryset = Post.objects.all()
 
     def get_queryset(self):
         queryset = super().get_queryset()
-
-        # فیلتر کردن بر اساس تگ یا لوکیشن در صورت نیاز
         tags = self.request.query_params.get('tags', None)
         location = self.request.query_params.get('location', None)
 
@@ -76,17 +75,19 @@ from .serializers import PostSerializer
 
 
 class PostCreateView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request, *args, **kwargs):
-        serializer = PostSerializer(data=request.data)
+        serializer = PostSerializer(data=request.data, context={'request': request})
         
         if serializer.is_valid():
-            # پست جدید ذخیره می‌شود
+          
             post = serializer.save(user=request.user)
 
-            # اگر عکس‌ها ارسال شده‌اند، ذخیره می‌شوند
-            images = request.data.get('images', [])
+            
+            images = request.FILES.getlist('image_files')
+            print(images) 
             for image_data in images:
-                image = Image.objects.create(post=post, **image_data)
+                Image.objects.create(post=post, image_data = image_data)
             
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
@@ -94,20 +95,26 @@ class PostCreateView(APIView):
 
 
 class CommentCreateView(APIView):
-    def post(self, request, post_id) :
-        post = Post.objects.get(id=post_id)
-        serializer = CommentSerializer(data=request.data) 
+    permission_classes = [AllowAny]
+    def post(self, request, post_id):
+        try:
+            post = Post.objects.get(id=post_id)  
+        except Post.DoesNotExist:
+            return Response({"detail": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user, post=post)
+            serializer.save(user=request.user, post=post)  
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-      
 
+from django.contrib.contenttypes.models import ContentType
 class LikePostView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request, post_id) :
         post = Post.objects.get(id=post_id)
-        if Like.objects.filter(user=request.user, post=post).exists():
+        content_type = ContentType.objects.get_for_model(Post)
+        if Like.objects.filter(user=request.user, content_type=content_type, object_id=post.id).exists():
             return Response({"detail":"you already like this :)"})
-        like = Like.objects.create(user=request.user, post=post)  
+        Like.objects.create(user=request.user, content_type=content_type, object_id=post.id)
         return Response({"detail":"post liked :)"}, status=status.HTTP_201_CREATED)
