@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram-like Social App</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #fafafa;
+        }
+        .post-card {
+            background: #fff;
+            border: 1px solid #e1e1e1;
+            border-radius: 8px;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+        .post-card img {
+            width: 100%;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .post-actions button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .post-actions button.liked {
+            color: #ed4956;
+        }
+        .post-comments {
+            padding: 10px;
+        }
+        .comment {
+            margin-bottom: 10px;
+        }
+        .comment .username {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .add-comment input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e1e1e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Post List -->
+        <div id="post-list">
+            <!-- Posts will be dynamically loaded here -->
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            const apiBaseUrl = 'socials/';
+
+            // Load all posts
+            function loadPosts() {
+                $.ajax({
+                    url: apiBaseUrl + 'posts/',
+                    method: 'GET',
+                    success: function (response) {
+                        $('#post-list').empty();
+                        response.forEach(post => {
+                            const postHtml = `
+                                <div class="post-card" data-post-id="${post.id}">
+                                    <img src="${post.images[0]?.url || 'https://via.placeholder.com/600x400'}" alt="Post Image">
+                                    <div class="p-3">
+                                        <div class="post-actions">
+                                            <button class="like-button ${post.is_liked ? 'liked' : ''}" onclick="toggleLike(${post.id})">
+                                                ❤️
+                                            </button>
+                                            <span class="like-count">${post.like_count} Likes</span>
+                                        </div>
+                                        <div class="post-caption">
+                                            <strong>${post.user.username}</strong> ${post.caption}
+                                        </div>
+                                        <div class="post-comments">
+                                            ${post.comments.map(comment => `
+                                                <div class="comment">
+                                                    <span class="username">${comment.user.username}</span>
+                                                    <span class="text">${comment.text}</span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                        <div class="add-comment">
+                                            <input type="text" placeholder="Add a comment..." onkeypress="if(event.keyCode === 13) addComment(${post.id}, this)">
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            $('#post-list').append(postHtml);
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error loading posts:", error);
+                    }
+                });
+            }
+
+            // Toggle like on a post
+            window.toggleLike = function (postId) {
+                $.ajax({
+                    url: apiBaseUrl + `posts/${postId}/like/`,
+                    method: 'POST',
+                    headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                    success: function (response) {
+                        loadPosts(); // Reload posts to update like status
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error toggling like:", error);
+                    }
+                });
+            };
+
+            // Add a comment to a post
+            window.addComment = function (postId, input) {
+                const commentText = input.value.trim();
+                if (commentText) {
+                    $.ajax({
+                        url: apiBaseUrl + `posts/${postId}/comment/`,
+                        method: 'POST',
+                        headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                        data: { text: commentText },
+                        success: function (response) {
+                            loadPosts(); // Reload posts to show the new comment
+                            input.value = ''; // Clear the input field
+                        },
+                        error: function (xhr, status, error) {
+                            console.error("Error adding comment:", error);
+                        }
+                    });
+                }
+            };
+
+            // Initial load of posts
+            loadPosts();
+        });
+    </script>
+</body>
+</html>
