@@ -5,29 +5,8 @@ from accounts.models import CustomUser, Otp
 from .serializers import UserRegistrationSerializer
 from rest_framework.permissions import AllowAny
 from django.utils import timezone
+from django.contrib.auth import login
 
-# class UserRegistrationView(APIView):
-#     permission_classes = [AllowAny]
-
-#     def post(self, request, *args, **kwargs):
-#         email = request.data.get("email")
-#         if not email:
-#             return Response({"detail": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
-        
-#         otp_code = Otp.send_otp_email(email)
-        
-#         return Response({"detail": "OTP has been sent to your email"}, status=status.HTTP_200_OK)
-
-
-# class VerifyOtpView(APIView):
-#     permission_classes = [AllowAny]
-
-#     def post(self, request, *args, **kwargs):
-#         serializer = UserRegistrationSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response({"detail": "User registered successfully!"}, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -37,6 +16,7 @@ from accounts.models import CustomUser, Otp, Profile
 from .serializers import UserRegistrationSerializer, OtpVerificationSerializer, ProfileSerializer
 
 class RegisterUserView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
@@ -47,6 +27,7 @@ class RegisterUserView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyOtpAndCompleteRegistrationView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = OtpVerificationSerializer(data=request.data)
         if serializer.is_valid():
@@ -68,14 +49,12 @@ class VerifyOtpAndCompleteRegistrationView(APIView):
             )
             # Create profile
             Profile.objects.create(user=user)
+            login(request, user) 
+            print(f"User {user.username} logged in successfully."   )
             return Response({"message": "Registration successful.", "user_id": user.id}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# class ProfileView(APIView):
-#     def get(self, request, user_id):
-#         profile = Profile.objects.get(user_id=user_id)
-#         serializer = ProfileSerializer(profile)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 from rest_framework.generics import RetrieveUpdateDestroyAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -104,6 +83,7 @@ from django.shortcuts import get_object_or_404
 #         return user.profile
 
 class ProfileView(APIView):
+    permission_classes = [IsAuthenticated] 
     def get(self, request, user_id):
         try:
             profile = Profile.objects.get(user_id=user_id)
@@ -116,11 +96,15 @@ class ProfileView(APIView):
 
 
 class UpdateProfileView(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request, user_id):
         try:
             profile = Profile.objects.get(user_id=user_id)
         except Profile.DoesNotExist:
             return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if profile.user != request.user:
+                return Response({"error": "You do not have permission to update this profile."}, status=status.HTTP_403_FORBIDDEN)
         
         serializer = ProfileSerializer(profile, data=request.data, partial=True)
         if serializer.is_valid():
@@ -129,25 +113,14 @@ class UpdateProfileView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-from django.contrib.auth import authenticate, login
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
 
-@csrf_exempt
-def api_login(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            email = data.get("email")
-            password = data.get("password")
+from rest_framework.generics import ListAPIView
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
 
-            user = authenticate(request, email=email, password=password)
-            if user is not None:
-                login(request, user)
-                return JsonResponse({"message": " login successful"}, status=200)
-            else:
-                return JsonResponse({"error": "username or password is not correct"}, status=400)
-        except json.JSONDecodeError:
-            return JsonResponse({"error": " bad request"}, status=400)
-    return JsonResponse({"error": "bad request "}, status=405)
+class ProfileListView(ListAPIView):
+    queryset = Profile.objects.all() 
+    serializer_class = ProfileSerializer 
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['user__username']  
+    search_fields = ['user__username']
