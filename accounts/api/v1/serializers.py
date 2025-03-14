@@ -68,7 +68,7 @@ class OtpVerificationSerializer(serializers.Serializer):
 class ProfileSerializer(serializers.ModelSerializer):
     user = user = serializers.SlugRelatedField(
         slug_field="username", 
-        queryset=CustomUser.objects.all()
+        read_only = True
     )
     posts_images = serializers.SerializerMethodField()
     class Meta:
@@ -83,4 +83,4 @@ class ProfileSerializer(serializers.ModelSerializer):
         }
     def get_posts_images(self, obj):
         posts = obj.user.posts.all().order_by("-created_at")
-        return [post.images.first().image.url if post.images.exists() else None for post in posts]   
+        return [post.images.first().image.url if post.images.exists() else None for post in posts if post.images.exists()]  

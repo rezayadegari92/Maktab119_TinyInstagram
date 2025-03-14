@@ -116,11 +116,17 @@ class UpdateProfileView(APIView):
 
 from rest_framework.generics import ListAPIView
 from rest_framework import filters
+
 from django_filters.rest_framework import DjangoFilterBackend
 
 class ProfileListView(ListAPIView):
     queryset = Profile.objects.all() 
     serializer_class = ProfileSerializer 
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['user__username']  
-    search_fields = ['user__username']
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['user__username',]  
+
+
+class ProfileDetailView(RetrieveAPIView):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    lookup_field = 'id'   
