@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Posts</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, rgb(117, 142, 255), #ff7eb3);
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .post {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .post h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #0095f6;
+        }
+        .post p {
+            margin: 10px 0;
+            font-size: 16px;
+            color: #555;
+        }
+        .post .images img {
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .post button {
+            background-color: #0095f6;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .post button:hover {
+            background-color: #0077c2;
+        }
+        .post .comments {
+            margin-top: 20px;
+        }
+        .post .comments .comment {
+            border-top: 1px solid #eee;
+            padding: 10px 0;
+        }
+        .post .comments h4 {
+            margin: 0 0 10px;
+            font-size: 16px;
+            color: #333;
+        }
+        .post .comments textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        #create-post-form {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        #create-post-form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        #create-post-form input[type="file"] {
+            margin-bottom: 10px;
+        }
+        #create-post-form button {
+            background-color: #0095f6;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        #create-post-form button:hover {
+            background-color: #0077c2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Posts</h1>
+        <div id="posts-list"></div>
+
+        <h2>Create New Post</h2>
+        <form id="create-post-form">
+            {% csrf_token %}
+            <textarea id="caption" placeholder="Write your post..."></textarea><br>
+            <input type="file" id="images" multiple><br>
+            <button type="submit">Submit Post</button>
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+            // Function to fetch and display posts
+            function fetchPosts() {
+                $.ajax({
+                    url: '/api/posts/',  // API endpoint for posts
+                    method: 'GET',
+                    success: function(response) {
+                        $('#posts-list').empty();
+                        response.forEach(function(post) {
+                            let postHtml = `
+                                <div class="post">
+                                    <h3>${post.user}</h3>
+                                    <p>${post.caption}</p>
+                                    <div class="images">
+                                        ${post.images.map(image => `<img src="${image.image}" alt="Post Image">`).join('')}
+                                    </div>
+                                    <p>Likes: ${post.like_count}</p>
+                                    <button onclick="likePost(${post.id})">Like</button>
+                                    <div class="comments">
+                                        <h4>Comments:</h4>
+                                        ${post.comments.map(comment => `
+                                            <div class="comment">
+                                                <p>${comment.user}: ${comment.text}</p>
+                                                <p>Likes: ${comment.like_count}</p>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    <form onsubmit="addComment(event, ${post.id})">
+                                        <textarea placeholder="Write your comment..."></textarea>
+                                        <button type="submit">Submit Comment</button>
+                                    </form>
+                                </div>
+                            `;
+                            $('#posts-list').append(postHtml);
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error fetching posts:', error);
+                    }
+                });
+            }
+
+            // Function to create a new post
+            $('#create-post-form').submit(function(event) {
+                console.log('Form submitted!');
+                event.preventDefault();
+                let formData = new FormData();
+                formData.append('caption', $('#caption').val());
+                let files = $('#images')[0].files;
+                if (files.length === 0) {
+                    alert('Please select at least one image.');
+                    return;  // اگر فایلی انتخاب نشده باشد، درخواست ارسال نشود
+                }
+                Array.from(files).forEach(file => {
+                    formData.append('images', file);
+                });
+
+                $.ajax({
+                    url: '/api/posts/create/',  // API endpoint for creating posts
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        alert('Post created successfully!');
+                        fetchPosts();  // Refresh the posts list
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error creating post:', error);
+                    }
+                });
+            });
+
+            // Function to like a post
+            window.likePost = function(postId) {
+                $.ajax({
+                    url: `/api/posts/${postId}/like/`,  // API endpoint for liking posts
+                    method: 'POST',
+                    success: function(response) {
+                        alert(response.detail);
+                        fetchPosts();  // Refresh the posts list
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error liking post:', error);
+                    }
+                });
+            };
+
+            // Function to add a comment
+            window.addComment = function(event, postId) {
+                event.preventDefault();
+                let commentText = $(event.target).find('textarea').val();
+
+                $.ajax({
+                    url: `/api/posts/${postId}/comment/`,  // API endpoint for adding comments
+                    method: 'POST',
+                    data: { text: commentText },
+                    success: function(response) {
+                        alert('Comment added successfully!');
+                        fetchPosts();  // Refresh the posts list
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error adding comment:', error);
+                    }
+                });
+            };
+
+            // Initial fetch of posts
+            fetchPosts();
+        });
+    </script>
+</body>
+</html>

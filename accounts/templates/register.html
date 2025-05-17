@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, rgb(114, 158, 252), rgb(235, 158, 136));
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #ffffff44;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            margin: 20px;
+        }
+
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+        }
+
+        h2 {
+            font-size: 24px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        input, textarea, button {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, textarea:focus {
+            border-color: #3498db;
+        }
+
+        button {
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .profile-details {
+            margin-bottom: 20px;
+        }
+
+        .profile-details p {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .profile-details img {
+            max-width: 100px;
+            border-radius: 50%;
+            margin-top: 10px;
+        }
+
+        .post-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .post-images img {
+            max-width: 100px;
+            border-radius: 6px;
+        }
+
+        .skip-button {
+            background-color: #e74c3c;
+            margin-top: 10px;
+        }
+
+        .skip-button:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Step 1: Register -->
+        <div id="step1">
+            <h1>Registration</h1>
+            <h2>Step 1: Register</h2>
+            <form id="registerForm">
+                {% csrf_token %}
+                <input type="email" name="email" placeholder="Email" required>
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <input type="text" name="first_name" placeholder="First Name" required>
+                <input type="text" name="last_name" placeholder="Last Name" required>
+                <input type="date" name="birth_date" required>
+                <input type="text" name="phone_number" placeholder="Phone Number">
+                <button type="submit">Register</button>
+            </form>
+        </div>
+
+        <!-- Step 2: Verify OTP -->
+        <div id="step2" class="hidden">
+            <h2>Step 2: Verify OTP</h2>
+            <form id="otpForm">
+                {% csrf_token %}
+                <input type="hidden" name="email" id="otpEmail">
+                <input type="hidden" name="username" id="otpUsername">
+                <input type="hidden" name="password" id="otpPassword">
+                <input type="hidden" name="first_name" id="otpFirstName">
+                <input type="hidden" name="last_name" id="otpLastName">
+                <input type="hidden" name="birth_date" id="otpBirthDate">
+                <input type="hidden" name="phone_number" id="otpPhoneNumber">
+                <input type="text" name="otp_code" placeholder="OTP Code" required>
+                <button type="submit">Verify OTP</button>
+            </form>
+        </div>
+
+        <!-- Step 3: Profile -->
+        <div id="step3" class="hidden">
+            <h2>Step 3: Profile</h2>
+            <div class="profile-details" id="profileDetails">
+                <p><strong>Username:</strong> <span id="profileUsername"></span></p>
+                <p><strong>Website:</strong> <span id="profileWebsite">N/A</span></p>
+                <p><strong>Bio:</strong> <span id="profileBio">N/A</span></p>
+                <p><strong>Location:</strong> <span id="profileLocation">N/A</span></p>
+                <p><strong>Private Account:</strong> <span id="profilePrivate">No</span></p>
+                <p><strong>Profile Picture:</strong> <img id="profilePicture" src="" alt="Profile Picture" style="display: none;"></p>
+                <div class="post-images" id="postImagesList"></div>
+            </div>
+            <h3>Complete Your Profile</h3>
+            <form id="completeProfileForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="text" name="website" placeholder="Website">
+                <textarea name="bio" placeholder="Bio"></textarea>
+                <input type="text" name="location" placeholder="Location">
+                <label>
+                    <input type="checkbox" name="is_private"> Private Account
+                </label>
+                <input type="file" name="profile_picture" accept="image/*">
+                <button type="submit">Save Profile</button>
+                <button type="button" id="skipProfile" class="skip-button">Skip</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Function to get CSRF token from the form
+        function getCSRFToken() {
+            return $('input[name="csrfmiddlewaretoken"]').val();
+        }
+
+        $(document).ready(function () {
+            let currentUserId = null;  // Store the current user ID
+
+            // Step 1: Register and request OTP
+            $('#registerForm').on('submit', function (e) {
+                e.preventDefault();
+                $.ajax({
+                    url: '/api/register/',
+                    method: 'POST',
+                    data: $(this).serialize(),
+                    headers: { "X-CSRFToken": getCSRFToken() },
+                    success: function (response) {
+                        $('#step1').hide();
+                        $('#step2').show();
+                        // Pre-fill hidden fields with registration data
+                        $('#otpEmail').val($('#registerForm input[name="email"]').val());
+                        $('#otpUsername').val($('#registerForm input[name="username"]').val());
+                        $('#otpPassword').val($('#registerForm input[name="password"]').val());
+                        $('#otpFirstName').val($('#registerForm input[name="first_name"]').val());
+                        $('#otpLastName').val($('#registerForm input[name="last_name"]').val());
+                        $('#otpBirthDate').val($('#registerForm input[name="birth_date"]').val());
+                        $('#otpPhoneNumber').val($('#registerForm input[name="phone_number"]').val());
+                    },
+                    error: function (xhr, status, error) {
+                        console.log("XHR:", xhr);
+                        console.log("Status:", status);
+                        console.log("Error:", error);
+                        alert("Error: " + (xhr.responseJSON ? xhr.responseJSON.error : "Registration failed. Please try again."));
+                    }
+                });
+            });
+
+            // Step 2: Verify OTP and complete registration
+            $('#otpForm').on('submit', function (e) {
+                e.preventDefault();
+                $.ajax({
+                    url: '/api/verify-otp/',
+                    method: 'POST',
+                    data: $(this).serialize(),
+                    headers: { "X-CSRFToken": getCSRFToken() },
+                    success: function (response) {
+                        console.log("User ID received:", response.user_id);
+                        currentUserId = response.user_id;  // Store the user ID
+                        $('#step2').hide();
+                        $('#step3').show();
+                        loadProfile(currentUserId);
+                    },
+                    error: function (xhr, status, error) {
+                        console.log("XHR:", xhr);
+                        console.log("Status:", status);
+                        console.log("Error:", error);
+                        alert("Error: " + (xhr.responseJSON ? xhr.responseJSON.error : "OTP verification failed. Please try again."));
+                    }
+                });
+            });
+
+            // Step 3: Load profile
+            function loadProfile(userId) {
+                $.ajax({
+                    url: '/api/profile/' + userId + '/',
+                    method: 'GET',
+                    success: function (response) {
+                        $('#profileUsername').text(response.user);
+                        $('#profileWebsite').text(response.website || 'N/A');
+                        $('#profileBio').text(response.bio || 'N/A');
+                        $('#profileLocation').text(response.location || 'N/A');
+                        $('#profilePrivate').text(response.is_private ? 'Yes' : 'No');
+                        if (response.profile_picture) {
+                            $('#profilePicture').attr('src', response.profile_picture).show();
+                        } else {
+                            $('#profilePicture').hide();
+                        }
+                        // Display post images
+                        const postImagesList = $('#postImagesList');
+                        postImagesList.empty();
+                        response.posts_images.forEach(imageUrl => {
+                            if (imageUrl) {
+                                postImagesList.append(`<img src="${imageUrl}" alt="Post Image" style="max-width: 100px; margin: 5px;">`);
+                            }
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        console.log("XHR:", xhr);
+                        console.log("Status:", status);
+                        console.log("Error:", error);
+                        alert("Error loading profile. Please try again.");
+                    }
+                });
+            }
+
+            // Complete Profile Form
+            $('#completeProfileForm').on('submit', function (e) {
+                e.preventDefault();
+                const formData = new FormData(this);  // Use FormData for file uploads
+                console.log("Form Data:", formData);  // Log form data for debugging
+
+                $.ajax({
+                    url: '/api/update-profile/' + currentUserId + '/',
+                    method: 'POST',
+                    data: formData,
+                    processData: false,  // Required for file uploads
+                    contentType: false,  // Required for file uploads
+                    headers: { "X-CSRFToken": getCSRFToken() },  // Include CSRF token
+                    success: function (response) {
+                        alert("Profile updated successfully!");
+                        loadProfile(currentUserId);  // Reload the profile
+                    },
+                    error: function (xhr, status, error) {
+                        console.log("XHR:", xhr);
+                        console.log("Status:", status);
+                        console.log("Error:", error);
+                        alert("Error: " + (xhr.responseJSON ? xhr.responseJSON.error : "Failed to update profile."));
+                    }
+                });
+            });
+
+            // Skip Profile
+            $('#skipProfile').on('click', function () {
+                alert("Profile setup skipped. You can update your profile later.");
+                window.location.href = "http://127.0.0.1:8000/";  // Redirect to home page
+            });
+        });
+    </script>
+</body>
+</html>

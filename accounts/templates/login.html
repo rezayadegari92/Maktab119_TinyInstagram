@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiny Insta login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- اضافه کردن jQuery -->
+    <style>
+        body {
+            background: linear-gradient(to right,rgb(117, 142, 255), #ff7eb3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+        .login-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .btn-login {
+            width: 100%;
+            background:rgb(117, 161, 255);
+            color: white;
+            transition: 0.3s;
+        }
+        .btn-login:hover {
+            background:rgb(185, 70, 87);
+        }
+        .error-message {
+            color: red;
+            text-align: center;
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Tiny Insta Login</h2>
+        <form id="loginForm">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa fa-envelope"></i></span>
+                <input type="email" id="email" class="form-control" placeholder="email" required>
+            </div>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa fa-lock"></i></span>
+                <input type="password" id="password" class="form-control" placeholder=" password" required>
+            </div>
+            <button type="submit" class="btn btn-login">login</button>
+            <p class="error-message" id="errorMessage"> username or password is not correct .</p>
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+           
+            $('#loginForm').submit(function(event) {
+                event.preventDefault(); 
+
+                $('#errorMessage').hide();
+
+                let email = $('#email').val();
+                let password = $('#password').val();
+
+              
+                $.ajax({
+                    url: '/login/',  
+                    method: 'POST',
+                    data: {
+                        username: email,  
+                        password: password
+                    },
+                    success: function(response) {
+                        
+                        window.location.href = '/posts/';
+                    },
+                    error: function(xhr, status, error) {
+                        
+                        $('#errorMessage').show();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
