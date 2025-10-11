@@ -41,17 +41,30 @@ from rest_framework import serializers
 from accounts.models import CustomUser, Otp, Profile
 
 class UserRegistrationSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    username = serializers.CharField()
-    password = serializers.CharField(write_only=True)
-    first_name = serializers.CharField()
-    last_name = serializers.CharField()
-    birth_date = serializers.DateField()
-    phone_number = serializers.CharField(required=False)
+    email = serializers.EmailField(help_text='Enter your email address for registration')
+    username = serializers.CharField(help_text='Choose a unique username (3-35 characters)')
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'}, help_text='Create a strong password (min 8 characters)')
+    first_name = serializers.CharField(help_text='Enter your first name')
+    last_name = serializers.CharField(help_text='Enter your last name')
+    birth_date = serializers.DateField(help_text='Enter your birth date (YYYY-MM-DD)')
+    phone_number = serializers.CharField(required=False, help_text='Enter your phone number (optional)')
 
 class OtpVerificationSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    otp_code = serializers.CharField()
+    email = serializers.EmailField(help_text='Enter the email address you used during registration')
+    otp_code = serializers.CharField(help_text='Enter the 6-digit OTP code from your email')
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(help_text='Enter your registered email address')
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'}, help_text='Enter your account password')
+
+class TokenRefreshSerializer(serializers.Serializer):
+    refresh = serializers.CharField(help_text='Enter the refresh token obtained from login')
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'birth_date', 'phone_number']
+        read_only_fields = ['id']
 
 # class ProfileSerializer(serializers.ModelSerializer):
 #     class Meta:
@@ -65,15 +78,16 @@ class OtpVerificationSerializer(serializers.Serializer):
 #         fields = ['id','email', 'username','password', 'first_name', 'last_name', 'birth_date', 'phone_number', 'otp_code']
 
 
-class ProfileSerializer(serializers.ModelSerializer):
-    user = user = serializers.SlugRelatedField(
+class ProfileListSerializer(serializers.ModelSerializer):
+    """Serializer for profile list view - excludes posts for better performance"""
+    user = serializers.SlugRelatedField(
         slug_field="username", 
         read_only = True
     )
-    posts_images = serializers.SerializerMethodField()
+    
     class Meta:
         model = Profile
-        fields = ['id','user','website','bio','profile_picture', 'location','is_private','posts_images']
+        fields = ['id','user','website','bio','profile_picture', 'location','is_private']
         extra_kwargs = {
             'website': {'required': False},
             'bio': {'required': False},
@@ -81,6 +95,29 @@ class ProfileSerializer(serializers.ModelSerializer):
             'is_private': {'required': False},
             'profile_picture': {'required': False},
         }
-    def get_posts_images(self, obj):
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    """Serializer for profile detail view - includes posts"""
+    user = serializers.SlugRelatedField(
+        slug_field="username", 
+        read_only = True
+    )
+    posts = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Profile
+        fields = ['id','user','website','bio','profile_picture', 'location','is_private','posts']
+        extra_kwargs = {
+            'website': {'required': False},
+            'bio': {'required': False},
+            'location': {'required': False},
+            'is_private': {'required': False},
+            'profile_picture': {'required': False},
+        }
+    
+    def get_posts(self, obj):
+        from socials.api.v1.serializers import PostSerializer
         posts = obj.user.posts.all().order_by("-created_at")
-        return [post.images.first().image.url if post.images.exists() else None for post in posts if post.images.exists()]  
+        request = self.context.get('request')
+        return PostSerializer(posts, many=True, context={'request': request}).data

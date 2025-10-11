@@ -1,0 +1,1169 @@
+openapi: 3.0.3
+info:
+  title: Tiny Instagram API
+  version: 1.0.0
+  description: API documentation for Tiny Instagram project - A social media platform
+    similar to Instagram
+paths:
+  /api/accounts/login/:
+    post:
+      operationId: accounts_login_create
+      description: Authenticate user with email and password. Returns only JWT access
+        and refresh tokens.
+      summary: User login
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequestRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Login successful - returns JWT tokens only
+                content:
+                  application/json:
+                    example:
+                      refresh: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+                      access: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Invalid credentials
+                content:
+                  application/json:
+                    example:
+                      error: Invalid email or password
+          description: ''
+  /api/accounts/profile/:
+    get:
+      operationId: accounts_profile_retrieve
+      description: Retrieve profile information for the currently authenticated user
+        (automatically determined from JWT token). Includes user's posts with full
+        details.
+      summary: Get authenticated user's profile
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Profile retrieved successfully
+                content:
+                  application/json:
+                    example:
+                      id: 1
+                      user: johndoe
+                      website: https://example.com
+                      bio: Hello, I am John!
+                      profile_picture: /media/profile_pictures/john.jpg
+                      location: New York
+                      is_private: false
+                      posts:
+                      - id: 1
+                        user: johndoe
+                        caption: My first post
+                        images:
+                        - id: 1
+                          image: /media/posts/image1.jpg
+                          image_type: post
+                        like_count: 10
+                        is_liked: false
+                        created_at: '2025-10-11T08:00:00Z'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Profile not found
+                content:
+                  application/json:
+                    example:
+                      error: Profile not found.
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                description: Authentication credentials were not provided
+          description: ''
+  /api/accounts/profiles/:
+    get:
+      operationId: accounts_profiles_list
+      description: Get a list of all user profiles with search capability by username.
+        Posts data is excluded for better performance.
+      summary: List all profiles
+      parameters:
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search profiles by username
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  description: List of profiles without posts data
+                  content:
+                    application/json:
+                      example:
+                      - id: 1
+                        user: johndoe
+                        website: https://example.com
+                        bio: Hello!
+                        profile_picture: /media/profile_pictures/john.jpg
+                        location: New York
+                        is_private: false
+                      - id: 2
+                        user: janedoe
+                        website: https://jane.com
+                        bio: Photography enthusiast
+                        profile_picture: /media/profile_pictures/jane.jpg
+                        location: Los Angeles
+                        is_private: true
+          description: ''
+  /api/accounts/profiles/{id}/:
+    get:
+      operationId: accounts_profiles_retrieve
+      description: Retrieve detailed profile information for a specific profile ID.
+        Includes posts data.
+      summary: Get profile details by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Profile details with posts
+                content:
+                  application/json:
+                    example:
+                      id: 1
+                      user: johndoe
+                      website: https://example.com
+                      bio: Hello, I am John!
+                      profile_picture: /media/profile_pictures/john.jpg
+                      location: New York
+                      is_private: false
+                      posts:
+                      - id: 1
+                        user: johndoe
+                        caption: Beautiful sunset
+                        images: []
+                        like_count: 10
+                        is_liked: false
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Profile not found
+          description: ''
+  /api/accounts/register/:
+    post:
+      operationId: accounts_register_create
+      description: Send registration data and receive OTP code via email for verification
+      summary: Register a new user
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequestRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: OTP sent successfully
+                content:
+                  application/json:
+                    example:
+                      message: OTP sent to your email.
+                      email: user@example.com
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Bad request - validation errors
+                content:
+                  application/json:
+                    example:
+                      email:
+                      - This field is required.
+                      username:
+                      - A user with that username already exists.
+          description: ''
+  /api/accounts/token/refresh/:
+    post:
+      operationId: accounts_token_refresh_create
+      description: Use refresh token to get a new access token. Access tokens expire
+        after 1 day.
+      summary: Refresh access token
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: New access token generated
+                content:
+                  application/json:
+                    example:
+                      access: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                description: Invalid or expired refresh token
+                content:
+                  application/json:
+                    example:
+                      detail: Token is invalid or expired
+          description: ''
+  /api/accounts/update-profile/:
+    post:
+      operationId: accounts_update_profile_create
+      description: Update profile information for the currently authenticated user
+        (automatically determined from JWT token). Supports both POST and PATCH methods.
+      summary: Update authenticated user's profile
+      tags:
+      - Profile
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequestRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequestRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Profile updated successfully
+                content:
+                  application/json:
+                    example:
+                      message: Profile updated successfully.
+                      profile:
+                        id: 1
+                        user: johndoe
+                        website: https://example.com
+                        bio: Updated bio
+                        location: New York
+                        is_private: false
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Profile not found
+                content:
+                  application/json:
+                    example:
+                      error: Profile not found.
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                description: Authentication credentials were not provided
+          description: ''
+    patch:
+      operationId: accounts_update_profile_partial_update
+      description: Update profile information for the currently authenticated user
+        (automatically determined from JWT token). Supports both POST and PATCH methods.
+      summary: Update authenticated user's profile
+      tags:
+      - Profile
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateProfileRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateProfileRequestRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateProfileRequestRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Profile updated successfully
+                content:
+                  application/json:
+                    example:
+                      message: Profile updated successfully.
+                      profile:
+                        id: 1
+                        user: johndoe
+                        website: https://example.com
+                        bio: Updated bio
+                        location: New York
+                        is_private: false
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Profile not found
+                content:
+                  application/json:
+                    example:
+                      error: Profile not found.
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                description: Authentication credentials were not provided
+          description: ''
+  /api/accounts/verify-otp/:
+    post:
+      operationId: accounts_verify_otp_create
+      description: Verify the OTP code sent to email, create user account, and return
+        JWT tokens for authentication.
+      summary: Verify OTP and complete registration
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OtpVerificationRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OtpVerificationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                description: Registration completed successfully with JWT tokens
+                content:
+                  application/json:
+                    example:
+                      message: Registration successful.
+                      user:
+                        id: 1
+                        email: user@example.com
+                        username: johndoe
+                        first_name: John
+                        last_name: Doe
+                        birth_date: '1990-01-01'
+                        phone_number: '+1234567890'
+                      tokens:
+                        refresh: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+                        access: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Invalid or expired OTP, or registration session expired
+                content:
+                  application/json:
+                    examples:
+                      invalid_otp:
+                        value:
+                          error: Invalid or expired OTP.
+                      session_expired:
+                        value:
+                          error: Registration session expired. Please register again.
+                      user_exists:
+                        value:
+                          error: User with this email already exists.
+          description: ''
+  /api/socials/comments/{comment_id}/delete/:
+    delete:
+      operationId: socials_comments_delete_destroy
+      description: Delete your own comment. Only the comment owner can delete.
+      summary: Delete a comment
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Comments
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Comment deleted successfully
+                content:
+                  application/json:
+                    example:
+                      detail: comment deleted :)
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                description: Permission denied - not the comment owner
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Comment not found
+          description: ''
+  /api/socials/posts/:
+    get:
+      operationId: socials_posts_list
+      description: Get a list of all posts. Can be filtered by tags and location.
+        Only shows posts from public profiles or followed private profiles.
+      summary: List all posts
+      parameters:
+      - in: query
+        name: location
+        schema:
+          type: string
+        description: Filter posts by location (partial match)
+      - in: query
+        name: tags
+        schema:
+          type: string
+        description: Filter posts by tag name
+      tags:
+      - Posts
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  description: List of posts
+                  content:
+                    application/json:
+                      example:
+                      - id: 1
+                        user: johndoe
+                        images:
+                        - id: 1
+                          image: /media/posts/image1.jpg
+                          image_type: post
+                          created_at: '2023-01-01T12:00:00Z'
+                        caption: Beautiful sunset!
+                        is_liked: true
+                        comments: []
+                        likes: []
+                        like_count: 5
+                        created_at: '2023-01-01T12:00:00Z'
+          description: ''
+  /api/socials/posts/{post_id}/:
+    get:
+      operationId: socials_posts_retrieve
+      description: Retrieve detailed information about a specific post
+      summary: Get post details
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Posts
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Post details
+                content:
+                  application/json:
+                    example:
+                      id: 1
+                      user: johndoe
+                      images:
+                      - id: 1
+                        image: /media/posts/image1.jpg
+                        image_type: post
+                        created_at: '2023-01-01T12:00:00Z'
+                      caption: Beautiful sunset!
+                      is_liked: true
+                      comments: []
+                      likes: []
+                      like_count: 5
+                      created_at: '2023-01-01T12:00:00Z'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Post not found
+          description: ''
+  /api/socials/posts/{post_id}/comment/:
+    post:
+      operationId: socials_posts_comment_create
+      description: Add a comment to a post. Can only comment on posts from public
+        profiles or followed private profiles.
+      summary: Add a comment to a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Comments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                description: Comment created successfully
+                content:
+                  application/json:
+                    example:
+                      id: 1
+                      user: johndoe
+                      text: Great post!
+                      like_count: 0
+                      is_liked: false
+                      created_at: '2023-01-01T12:00:00Z'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Bad request - validation errors
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Post not found
+          description: ''
+  /api/socials/posts/{post_id}/delete/:
+    delete:
+      operationId: socials_posts_delete_destroy
+      description: Delete your own post. Only the post owner can delete.
+      summary: Delete a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Posts
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                description: Post deleted successfully
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                description: Permission denied - not the post owner
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Post not found
+          description: ''
+  /api/socials/posts/{post_id}/like/:
+    post:
+      operationId: socials_posts_like_create
+      description: Like a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - socials
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/socials/posts/{post_id}/unlike/:
+    delete:
+      operationId: socials_posts_unlike_destroy
+      description: Remove your like from a post
+      summary: Unlike a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Posts
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Like removed successfully
+                content:
+                  application/json:
+                    example:
+                      detail: like removed :)
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Post not found or like not found
+          description: ''
+  /api/socials/posts/{post_id}/update/:
+    put:
+      operationId: socials_posts_update_update
+      description: Update caption, location, or replace images of your own post. If
+        new images are provided, old images will be deleted and replaced with new
+        ones. Supports multipart/form-data for image uploads. Both PUT and PATCH methods
+        supported. Only the post owner can update.
+      summary: Update a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Posts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Post updated successfully
+                content:
+                  application/json:
+                    example:
+                      id: 1
+                      user: johndoe
+                      images:
+                      - id: 1
+                        image: /media/posts/image1.jpg
+                        image_type: post
+                        created_at: '2023-01-01T12:00:00Z'
+                      caption: Updated caption!
+                      location: New York
+                      is_liked: false
+                      comments: []
+                      likes: []
+                      like_count: 5
+                      created_at: '2023-01-01T12:00:00Z'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                description: Permission denied - not the post owner
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Post not found
+          description: ''
+    patch:
+      operationId: socials_posts_update_partial_update
+      description: Update caption, location, or replace images of your own post. If
+        new images are provided, old images will be deleted and replaced with new
+        ones. Supports multipart/form-data for image uploads. Both PUT and PATCH methods
+        supported. Only the post owner can update.
+      summary: Update a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Posts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPostRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPostRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPostRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                description: Post updated successfully
+                content:
+                  application/json:
+                    example:
+                      id: 1
+                      user: johndoe
+                      images:
+                      - id: 1
+                        image: /media/posts/image1.jpg
+                        image_type: post
+                        created_at: '2023-01-01T12:00:00Z'
+                      caption: Updated caption!
+                      location: New York
+                      is_liked: false
+                      comments: []
+                      likes: []
+                      like_count: 5
+                      created_at: '2023-01-01T12:00:00Z'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                description: Permission denied - not the post owner
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                description: Post not found
+          description: ''
+  /api/socials/posts/create/:
+    post:
+      operationId: socials_posts_create_create
+      description: Create a new post with images and caption. Upload images using
+        the image_files field.
+      summary: Create a new post
+      tags:
+      - Posts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                description: Post created successfully
+                content:
+                  application/json:
+                    example:
+                      id: 1
+                      user: johndoe
+                      images: []
+                      caption: Beautiful sunset!
+                      is_liked: false
+                      comments: []
+                      likes: []
+                      like_count: 0
+                      created_at: '2023-01-01T12:00:00Z'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Bad request - validation errors
+          description: ''
+  /api/socials/users/{user_id}/follow/:
+    post:
+      operationId: socials_users_follow_create
+      description: Follow a user
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - socials
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/socials/users/{user_id}/followers/:
+    get:
+      operationId: socials_users_followers_retrieve
+      description: Get list of followers for a user
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - socials
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/socials/users/{user_id}/following/:
+    get:
+      operationId: socials_users_following_retrieve
+      description: Get list of users that a user is following
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - socials
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/socials/users/{user_id}/unfollow/:
+    delete:
+      operationId: socials_users_unfollow_destroy
+      description: Unfollow a user
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - socials
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    CommentRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+      required:
+      - text
+    ImageRequest:
+      type: object
+      properties:
+        image:
+          type: string
+          format: binary
+        image_type:
+          $ref: '#/components/schemas/ImageTypeEnum'
+      required:
+      - image
+    ImageTypeEnum:
+      enum:
+      - post
+      - story
+      - other
+      type: string
+      description: |-
+        * `post` - Post
+        * `story` - Story
+        * `other` - Other
+    LikeRequest:
+      type: object
+      properties:
+        user:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. letters, digits and @/./+/-/_
+            only.
+      required:
+      - user
+    LoginRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          description: Your registered email address
+        password:
+          type: string
+          minLength: 1
+          description: Your account password
+      required:
+      - email
+      - password
+    OtpVerificationRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          description: Enter the email address you used during registration
+        otp_code:
+          type: string
+          minLength: 1
+          description: Enter the 6-digit OTP code from your email
+      required:
+      - email
+      - otp_code
+    PatchedPostRequest:
+      type: object
+      properties:
+        caption:
+          type: string
+        image_files:
+          type: array
+          items:
+            type: string
+            format: binary
+          writeOnly: true
+    PatchedUpdateProfileRequestRequest:
+      type: object
+      properties:
+        website:
+          type: string
+          format: uri
+          minLength: 1
+          description: Your website URL
+        bio:
+          type: string
+          minLength: 1
+          description: Tell us about yourself
+        location:
+          type: string
+          minLength: 1
+          description: Your location
+        is_private:
+          type: boolean
+          description: Make profile private
+        profile_picture:
+          type: string
+          format: binary
+          description: Upload profile picture
+    PostRequest:
+      type: object
+      properties:
+        caption:
+          type: string
+        image_files:
+          type: array
+          items:
+            type: string
+            format: binary
+          writeOnly: true
+    RegisterRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          description: Your email address for registration
+        username:
+          type: string
+          minLength: 1
+          description: Choose a unique username (3-35 characters)
+        password:
+          type: string
+          minLength: 1
+          description: Create a strong password (min 8 characters)
+        first_name:
+          type: string
+          minLength: 1
+          description: Your first name
+        last_name:
+          type: string
+          minLength: 1
+          description: Your last name
+        birth_date:
+          type: string
+          format: date
+          description: Your birth date (YYYY-MM-DD format)
+        phone_number:
+          type: string
+          minLength: 1
+          description: Your phone number (optional)
+      required:
+      - birth_date
+      - email
+      - first_name
+      - last_name
+      - password
+      - username
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+          description: Enter the refresh token obtained from login
+      required:
+      - refresh
+    UpdateProfileRequestRequest:
+      type: object
+      properties:
+        website:
+          type: string
+          format: uri
+          minLength: 1
+          description: Your website URL
+        bio:
+          type: string
+          minLength: 1
+          description: Tell us about yourself
+        location:
+          type: string
+          minLength: 1
+          description: Your location
+        is_private:
+          type: boolean
+          description: Make profile private
+        profile_picture:
+          type: string
+          format: binary
+          description: Upload profile picture
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

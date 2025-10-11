@@ -1,0 +1,48 @@
+services:
+  web:
+    container_name: tiny_instagram_web
+    build: .
+    image: tiny_instagram:latest
+    command: python manage.py runserver 0.0.0.0:8004
+    volumes:
+      - .:/app
+      - ./media:/app/media
+    ports:
+      - "8004:8004"
+    environment:
+      - DJANGO_SETTINGS_MODULE=core.settings
+      - DEBUG=True
+      - POSTGRES_DB=tiny_instagram
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379/0
+      - ALLOWED_HOSTS=*
+    depends_on:
+      - redis
+      - db
+
+  redis:
+    container_name: tiny_instagram_redis
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+
+  db:
+    container_name: tiny_instagram_db
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=tiny_instagram
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+volumes:
+  pgdata:
+
